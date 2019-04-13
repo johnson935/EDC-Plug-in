@@ -6,7 +6,7 @@ thisDir = os.path.dirname(thisPath)
 
 toolset = getAFXApp().getAFXMainWindow().getPluginToolset()
 toolset.registerGuiMenuButton(
-    buttonText='EDCtest', 
+    buttonText='FracTool', 
     object=Activator(os.path.join(thisDir, 'plugin3DB.py')),
     kernelInitString='import EDC2',
     messageId=AFXMode.ID_ACTIVATE,
