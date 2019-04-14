@@ -38,7 +38,8 @@ def fEDC(part, model, singlePlane, multiPlane, *args, **kwargs):
     g90 = kwargs.get('g90')
     selectAxis = kwargs.get('selectAxis')
     axisGlobal = kwargs.get('axisGlobal')
-    
+    if part == '':
+        sys.exit('Part not defined please make a part before using software')
     p = mdb.models[model].parts[part]
     
     # timing script
@@ -55,12 +56,15 @@ def fEDC(part, model, singlePlane, multiPlane, *args, **kwargs):
     z = []
     nodeSet = p.nodes
     elementSet = p.elements
-    
+    sigma1 = 300
+    if len(elementSet) == 0 or len(elementSet) == None:
+        sys.exit('No mesh defined please define mesh before using software')
     #setting material properties
     if cusMat == 'Default Material':
         if mat == 'T800s/M21':
             G90 = 0.255
             G0 = 209
+            
         elif mat == 'T300/913':
             G90 = 0.211
             G0 = 133
@@ -115,9 +119,9 @@ def fEDC(part, model, singlePlane, multiPlane, *args, **kwargs):
                 r = np.array([1,z,0])
                 ax = 'y'
             elif axisGlobal == 'Z':
-                s = np.array([0,z,0])
-                q = np.array([0,z,1])
-                r = np.array([1,z,0])
+                s = np.array([0,0,z])
+                q = np.array([0,1,z])
+                r = np.array([1,0,z])
                 ax = 'z'
             lambRecord = []
         
@@ -158,6 +162,8 @@ def fEDC(part, model, singlePlane, multiPlane, *args, **kwargs):
                 if float(abs(np.dot(perp,np.array(nodeSet[sort[0]].coordinates)) - d)/(np.linalg.norm(perp))) <= float(math.sqrt(diag**2+maxSize**2)):
                     region = []
                     nLayups = len(p.compositeLayups.keys())
+                    if nLayups == 0:
+                        sys.exit('Composite layup not defined please define layup before using software')
                     # number of layups
                     for n in range(0,nLayups):
                         key = p.compositeLayups.keys()[n]
@@ -538,12 +544,13 @@ def fEDC(part, model, singlePlane, multiPlane, *args, **kwargs):
                 #orientation already exist
                 materialG = {}
                 totalU = 0
+                materialSigma1 = {}
                 axis.append(z)
                 for element in area2.keys():
                     theta = materialAngle[element]
                     #writing  and reading to database
                     materialG[element] = G0 * np.cos(np.multiply(theta,np.pi/180)) + G90 * np.sin(np.multiply(theta,np.pi/180))
-          
+                    materialSigma1[element] = sigma1 * np.cos(np.multiply(theta,np.pi/180))
                     #calculate energy dissipation
                     
                     totalU += np.dot(materialG[element],area2[element])
@@ -656,6 +663,9 @@ def fEDC(part, model, singlePlane, multiPlane, *args, **kwargs):
                 if float(abs(np.dot(perp,np.array(nodeSet[sort[0]].coordinates)) - d)/(np.linalg.norm(perp))) <= float(math.sqrt(diag**2+maxSize**2)):
                     region = []
                     nLayups = len(p.compositeLayups.keys())
+                    if nLayups == 0:
+                        sys.exit('Composite layup not defined please define layup before using software')
+
                     # number of layups
                     for n in range(0,nLayups):
                         key = p.compositeLayups.keys()[n]
@@ -816,7 +826,7 @@ def fEDC(part, model, singlePlane, multiPlane, *args, **kwargs):
                             #find the areas by sorting the coordinates of intersections
                             norm = 0
                             angles = {}
-
+    
                             #for just three points of intersection find area of triangle
                             if k == 3:
                                 pq = intercept[0,:] - intercept[1,:]
@@ -1002,13 +1012,13 @@ def fEDC(part, model, singlePlane, multiPlane, *args, **kwargs):
                 #orientation already exist
                 materialG = {}
                 totalU = 0
-
+                materialSigma1 = {}
                 axis.append(z*axisLength)
                 for element in area2.keys():
                     theta = materialAngle[element]
                     #writing  and reading to database
                     materialG[element] = G0 * np.cos(np.multiply(theta,np.pi/180)) + G90 * np.sin(np.multiply(theta,np.pi/180))
-          
+                    materialSigma1[element] = sigma1 * np.cos(np.multiply(theta, np.pi/180))
                     #calculate energy dissipation
                     
                     totalU += np.dot(materialG[element],area2[element])
@@ -1052,7 +1062,7 @@ def fEDC(part, model, singlePlane, multiPlane, *args, **kwargs):
     if singlePlane == True:
         area2 = {}
         selectPsingle = kwargs.get('selectPsingle')
-        if selectPsingle == 'Select Three Points (Nodes In Mesh) On Fracture Surface:':
+        if selectPsingle == 'Select Three Points (Nodes In Mesh) On Fracture plane:':
             coord1 = kwargs.get('coord1')
             coord2 = kwargs.get('coord2')
             coord3 = kwargs.get('coord3')
@@ -1063,9 +1073,9 @@ def fEDC(part, model, singlePlane, multiPlane, *args, **kwargs):
             enterCoord1 = kwargs.get('enterCoord1')
             enterCoord2 = kwargs.get('enterCoord2')
             enterCoord3 = kwargs.get('enterCoord3')
-            s = np.array([enterCoord1[0][0],enterCoord1[0][1],enterCoord1][0][2])
-            q = np.array([enterCoord2[0][0],enterCoord2[0][1],enterCoord2][0][2])
-            r = np.array([enterCoord3[0][0],enterCoord3[0][1],enterCoord3][0][2])
+            s = np.array([enterCoord1[0][0],enterCoord1[0][1],enterCoord1[0][2]])
+            q = np.array([enterCoord2[0][0],enterCoord2[0][1],enterCoord2[0][2]])
+            r = np.array([enterCoord3[0][0],enterCoord3[0][1],enterCoord3[0][2]])
             
         lambRecord = []
             
@@ -1105,6 +1115,9 @@ def fEDC(part, model, singlePlane, multiPlane, *args, **kwargs):
             if float(abs(np.dot(perp,np.array(nodeSet[sort[0]].coordinates)) - d)/(np.linalg.norm(perp))) <= float(math.sqrt(diag**2+maxSize**2)):
                 region = []
                 nLayups = len(p.compositeLayups.keys())
+                if nLayups == 0:
+                        sys.exit('Composite layup not defined please define layup before using software')
+
                 # number of layups
                 for n in range(0,nLayups):
                     key = p.compositeLayups.keys()[n]
@@ -1454,12 +1467,12 @@ def fEDC(part, model, singlePlane, multiPlane, *args, **kwargs):
             #orientation already exist
             materialG = {}
             totalU = 0
-
+            materialSigma1 = {}
             for element in area2.keys():
                 theta = materialAngle[element]
                 #writing  and reading to database
                 materialG[element] = G0 * np.cos(np.multiply(theta,np.pi/180)) + G90 * np.sin(np.multiply(theta,np.pi/180))
-
+                materialSigma1[element] = sigma1 * np.cos(np.multiply(theta,np.pi/180))
       
                 #calculate energy dissipation
                 
@@ -1470,4 +1483,4 @@ def fEDC(part, model, singlePlane, multiPlane, *args, **kwargs):
             t2 = time.time()
             print('Run time: {0}'.format(t2-t1))
     if multiPlane == False and singlePlane == False:
-        print('No checkboxes were ticked to perform calculations please tick one checkbox')
+        sys.exit('No checkboxes were ticked to perform calculations please tick one checkbox')
